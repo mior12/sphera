@@ -123,11 +123,12 @@ TEST(Allocator, DefragMove) {
     set<void *> initialPtrs;
     vector<Pointer> ptrs;
     int size = 135;
-    
+
     ASSERT_TRUE(fillUp(a, size, ptrs));
     a.free(ptrs[1]);
     a.free(ptrs[10]);
     a.free(ptrs[15]);
+
     ptrs.erase(ptrs.begin() + 15);
     ptrs.erase(ptrs.begin() + 10);
     ptrs.erase(ptrs.begin() + 1);
@@ -151,72 +152,72 @@ TEST(Allocator, DefragMove) {
     for (Pointer &p: ptrs) {
         EXPECT_TRUE(isDataOk(p, size));
         a.free(p);
-        }
     }
+}
 
-    TEST(Allocator, DefragMoveTwice) {
-        Allocator a(buf, sizeof(buf));
+TEST(Allocator, DefragMoveTwice) {
+    Allocator a(buf, sizeof(buf));
 
-        vector<Pointer> ptrs;
-        int size = 225;
+    vector<Pointer> ptrs;
+    int size = 225;
 
-        ASSERT_TRUE(fillUp(a, size, ptrs));
-        a.free(ptrs[1]);
-        a.free(ptrs[10]);
-        ptrs.erase(ptrs.begin() + 10);
-        ptrs.erase(ptrs.begin() + 1);
+    ASSERT_TRUE(fillUp(a, size, ptrs));
+    a.free(ptrs[1]);
+    a.free(ptrs[10]);
+    ptrs.erase(ptrs.begin() + 10);
+    ptrs.erase(ptrs.begin() + 1);
 
-        a.defrag();
+    a.defrag();
 
-        a.free(ptrs[15]);
-        ptrs.erase(ptrs.begin() + 15);
+    a.free(ptrs[15]);
+    ptrs.erase(ptrs.begin() + 15);
 
-        a.defrag();
+    a.defrag();
 
-        ptrs.push_back(a.alloc(size));
-        writeTo(ptrs.back(), size);
+    ptrs.push_back(a.alloc(size));
+    writeTo(ptrs.back(), size);
 
-        for (Pointer &p: ptrs) {
-            EXPECT_TRUE(isDataOk(p, size));
-            a.free(p);
-        }
+    for (Pointer &p: ptrs) {
+        EXPECT_TRUE(isDataOk(p, size));
+        a.free(p);
     }
+}
 
 
-    TEST(Allocator, DefragAvailable) {
-        Allocator a(buf, sizeof(buf));
+TEST(Allocator, DefragAvailable) {
+    Allocator a(buf, sizeof(buf));
 
-        vector<Pointer> ptrs;
-        int size = 135;
+    vector<Pointer> ptrs;
+    int size = 135;
 
-        ASSERT_TRUE(fillUp(a, size, ptrs));
-        a.free(ptrs[1]);
-        a.free(ptrs[10]);
-        a.free(ptrs[15]);
+    ASSERT_TRUE(fillUp(a, size, ptrs));
 
-        ptrs.erase(ptrs.begin() + 15);
-        ptrs.erase(ptrs.begin() + 10);
-        ptrs.erase(ptrs.begin() + 1);
+    a.free(ptrs[1]);
+    a.free(ptrs[10]);
+    a.free(ptrs[15]);
 
-        try {
-            Pointer p = a.alloc(size * 2);
-            a.free(p);
+    ptrs.erase(ptrs.begin() + 15);
+    ptrs.erase(ptrs.begin() + 10);
+    ptrs.erase(ptrs.begin() + 1);
 
-            cerr << "WARNING: Allocator not fragmented initially. Defrag tests are inconclusive." << endl;
-        } catch (AllocError &) {} 
-        a.defrag();
-        Pointer newPtr = a.alloc(size * 2);
-        writeTo(newPtr, size * 2);
+    try {
+        Pointer p = a.alloc(size * 2);
+        a.free(p);
 
-        for (Pointer &p: ptrs) {
-           EXPECT_TRUE(isDataOk(p, size));
-            try {
-            a.free(p); 
-           } catch(const AllocError& ) {std::cout << "Pidor" << std::endl;}
-        }
+        cerr << "WARNING: Allocator not fragmented initially. Defrag tests are inconclusive." << endl;
+    } catch (AllocError &) {} 
+
+    a.defrag();
+    Pointer newPtr = a.alloc(size * 2);
+    writeTo(newPtr, size * 2);
+
+    for (Pointer &p: ptrs) {
+       EXPECT_TRUE(isDataOk(p, size));
+       a.free(p); 
     }
+}
 
-    TEST(Allocator, ReallocFromEmpty) {
+TEST(Allocator, ReallocFromEmpty) {
     Allocator a(buf, sizeof(buf));
     
     int size = 81;
