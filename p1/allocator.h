@@ -1,6 +1,6 @@
 #include <stdexcept>
 #include <string>
-#include <set>
+#include <map>
 #include <memory>
 
 enum class AllocErrorType {
@@ -26,47 +26,39 @@ class Allocator;
 class Pointer {
 public:
     friend class Allocator;
-    Pointer() : 
-        m(new char*(nullptr)),
-        N(0) 
-        {}
-    Pointer(char* _m, size_t _N) : 
-        m(new char*(_m)),
-        N(_N)
-        {}
+    Pointer() {}
+    void* get() const {return m?*m:nullptr;}
 
-    size_t get_size() const {return N;}
-    void* get() const {return *m;}
 private:
-    void reset_memory() { *m = nullptr; }
-    void set_memory(char* p) const { *m = p; }
-    void set_size(size_t n) { N = n; } 
-    mutable std::shared_ptr<char*> m;
-    size_t N; 
-};
+    Pointer(const std::shared_ptr<char*>& p) :
+        m(p)
+        {}
 
-template<typename T>
-struct comp {
-    bool operator() (const T& l,const T& r) {
-        return l.get() < r.get();
-    }
+    std::shared_ptr<char*> m;
 };
 
 class Allocator {
-public:
-    Allocator(void *base, size_t _capacity);
-    Pointer alloc(size_t N);
-    void realloc(Pointer &p, size_t N);
-    void free(Pointer &p);
-    void defrag();
+    public:
+        Allocator(void *base, size_t _capacity);
+        Pointer alloc(size_t N);
+        void realloc(Pointer &p, size_t N);
+        void free(Pointer &p);
+        void defrag();
 
-    std::string dump() { return ""; }
+        std::string dump() { return ""; }
     private:
-    char* find(size_t N);
-    char* begin;
-    char* curr;
-    std::set<Pointer, comp<Pointer>> pointers;
-    size_t capacity;
-    size_t size;
+        
+        struct comp {
+            bool operator() (const std::shared_ptr<char*>& l,const std::shared_ptr<char*>& r) {
+                return *l < *r;
+            }
+        };
+
+        char* find(size_t N);
+        char* begin;
+        char* curr;
+        std::map<std::shared_ptr<char*>, std::size_t, comp> pointers;
+        size_t capacity;
+        size_t size;
 };
 

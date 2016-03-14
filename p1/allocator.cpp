@@ -1,5 +1,6 @@
 #include "allocator.h"
-#include <string.h>
+#include <cstring>
+#include <vector>
 
 Allocator::Allocator(void* base, size_t _capacity):
     begin((char*)base),
@@ -18,68 +19,58 @@ Pointer Allocator::alloc(size_t N) {
     if(begin + capacity < curr + N) {
         char* f = find(N);
         if(f == nullptr) 
-            throw AllocError(AllocErrorType::NoMemory, "Can't alloc memory!");
-        else 
-            rm = f;
+            throw AllocError(AllocErrorType::NoMemory, "Can't alloc memory!"); 
+        rm = f;
     }
     else 
         curr += N;
-
-    Pointer p(rm, N);
-    pointers.insert(p);
+    std::shared_ptr<char*> sp = std::make_shared<char*>(rm); 
+    pointers.insert(std::make_pair(sp, N));
     size += N;
-    return p; 
+    return sp; 
 }
 
 void Allocator::free(Pointer& p) 
 {
-    if(p.get() == nullptr)
-        throw AllocError(AllocErrorType::InvalidFree, "Can't free memory");
-    size_t n = p.get_size();
-    char* ptr = (char*)p.get();
-    if(ptr + n == curr) 
-         curr = ptr;
-    pointers.erase(p);
-    size -= n;
-    p.set_size(0);
-    p.reset_memory(); 
+    auto it = p.m ? pointers.find(p.m) : pointers.end(); 
+    if(it == pointers.end())
+         throw AllocError(AllocErrorType::InvalidFree, "Can't free memory");
+    size -= it->second;
+    pointers.erase(it);
+    p = Pointer(); 
 }
 
 void Allocator::realloc(Pointer& p, size_t N) {
-    size_t n = p.get_size();
-    if(p.get() == nullptr) 
+    auto it = p.m ? pointers.find(p.m) : pointers.end(); 
+    if(it == pointers.end()) 
         p = alloc(N); 
-    else if(n > N) {
-        char* ptr = (char*)p.get();
-        if(ptr + n == curr)
-            curr = ptr + N;
-        p.set_size(N);
-        size -= n - N;
+    else if(it->second > N) {
+        size -= it->second - N;
+        it->second = N;
     }
-    else if(n < N) {
-        char* ptr = (char*)p.get();
-        int diff = N - n;
+    else if(it->second < N) {
+        int diff = N - it->second;
         if(size + diff > capacity)
             throw AllocError(AllocErrorType::NoMemory, "Can't alloc memory!");
-        if(ptr + n == curr) {
-            curr = ptr + N;
-            p.set_size(N);
-        }
-        else {
-            free(p);
-            p = alloc(N);
-        }
+        char* ptr = *it->first;
+        if(ptr + it->second == curr)  
+            curr = ptr;
+        free(p);
+        p = alloc(N);
     }
 }
 
 void Allocator::defrag() {
     char* temp = begin;
-    for(auto it = pointers.begin(); it != pointers.end(); ++it) {
-        if(temp < it->get()) {
-            memcpy(temp, it->get(), it->get_size());
-            it->set_memory(temp);  
+    std::vector<std::pair<std::shared_ptr<char*>, size_t>> old(pointers.begin(), pointers.end());
+    pointers.clear();
+    for(auto it = old.begin(); it != old.end(); ++it) {
+        if(temp < *it->first) {
+            memcpy(temp, *it->first, it->second);
+            *it->first = temp;
         }
-        temp += it->get_size();   
+        pointers.insert(*it);
+        temp += it->second;   
     }
     curr = temp;
 }
@@ -87,9 +78,9 @@ void Allocator::defrag() {
 char* Allocator::find(size_t N) {
     char* temp = begin;
     for(auto it = pointers.begin(); it != pointers.end(); ++it) {
-        if((char*)it->get() - temp >= N)
+        if(*it->first - temp >= N)
             return temp;
-        temp = (char*)it->get() + it->get_size();
+        temp = *it->first + it->second;
     }
     return nullptr;
 }
