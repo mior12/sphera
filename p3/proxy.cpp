@@ -106,27 +106,6 @@ void bridge::on_recv_one(const bs::error_code& ec, size_t size)
     }
     else
         close();
-   /* buf_one_.complete_recv(size);
-    if(!send_in_progress_two && buf_one_.size()) {
-            sock_two_.async_write_some(buf_one_.prepare_send(),
-                                      std::bind(&bridge::on_send_two, shared_from_this(),
-                                      std::placeholders::_1, 
-                                      std::placeholders::_2));
-        send_in_progress_two = true;
-    }
-    if(!ec) {
-        recv_in_progress_one = buf_one_.size() == buffer::BUFFER_SIZE;
-        if(!recv_in_progress_one)
-            sock_one_.async_read_some(buf_one_.prepare_recv(),
-                              std::bind(&bridge::on_recv_one, shared_from_this(),
-                                        std::placeholders::_1, 
-                                        std::placeholders::_2));
-    } 
-    else if(ec.value() != ba::error::eof) {
-        bs::error_code err_close;
-        sock_one_.close(err_close);
-        sock_two_.close(err_close);       
-    }*/
 }
 void bridge::on_recv_two(const bs::error_code& ec, size_t size) 
 {
@@ -143,27 +122,6 @@ void bridge::on_recv_two(const bs::error_code& ec, size_t size)
     }
     else
         close();
-   /* buf_two_.complete_recv(size);
-    if(!send_in_progress_two && buf_two_.size()) {
-        sock_one_.async_write_some(buf_two_.prepare_send(),
-                                   std::bind(&bridge::on_send_one, shared_from_this(),
-                                             std::placeholders::_1,
-                                             std::placeholders::_2));
-        send_in_progress_one = true;
-    }
-    if(!ec) {
-        recv_in_progress_two = buf_two_.size() == buffer::BUFFER_SIZE;
-        if(!recv_in_progress_two)
-            sock_two_.async_read_some(buf_two_.prepare_recv(),
-                                     std::bind(&bridge::on_recv_two, shared_from_this(),
-                                               std::placeholders::_1,
-                                               std::placeholders::_2));
-    }
-    else if(ec.value() != ba::error::eof) {
-        bs::error_code err_close;
-        sock_one_.close(err_close);
-        sock_two_.close(err_close);
-    }*/
 }
 
 void bridge::on_send_one(const bs::error_code& ec, size_t size) 
@@ -177,29 +135,6 @@ void bridge::on_send_one(const bs::error_code& ec, size_t size)
     }
     else if(ec.value() != ba::error::eof)
         close();
-
-
-    /*if(ec) {
-        std::cout << "error " << ec << std::endl;
-        std::cout << "size " << size << std::endl;
-        bs::error_code err_close;
-        sock_one_.close(err_close);
-        sock_two_.close(err_close);
-    }
-    else {
-        buf_two_.complete_send(size);
-        send_in_progress_two = buf_two_.size() == 0;
-        if(!send_in_progress_two) 
-            sock_two_.async_write_some(buf_two_.prepare_send(),
-                                       std::bind(&bridge::on_send_one, shared_from_this(),
-                                                 std::placeholders::_1,
-                                                 std::placeholders::_2));
-        
-        sock_two_.async_read_some(buf_two_.prepare_recv(),
-                                  std::bind(&bridge::on_recv_two, shared_from_this(),
-                                            std::placeholders::_1,
-                                            std::placeholders::_2));
-    }*/
 }
 
 void bridge::on_send_two(const bs::error_code& ec, size_t size) 
@@ -213,28 +148,6 @@ void bridge::on_send_two(const bs::error_code& ec, size_t size)
     }
     else if(ec.value() != ba::error::eof)
         close();
-
-
-  /*  std::cout << "Completed send to B..." << std::endl;
-    if(ec) {
-        bs::error_code err_close;
-        sock_one_.close(err_close);
-        sock_two_.close(err_close);        
-    }
-    else {
-        buf_one_.complete_send(size);
-        send_in_progress_two = buf_one_.size() == 0;
-        if(!send_in_progress_two) 
-            sock_two_.async_write_some(buf_one_.prepare_send(),
-                                      std::bind(&bridge::on_send_two, shared_from_this(),
-                                      std::placeholders::_1, 
-                                      std::placeholders::_2));
-        //if(!recv_in_progress_two)
-        sock_one_.async_read_some(buf_one_.prepare_recv(),
-                                      std::bind(&bridge::on_recv_one, shared_from_this(),
-                                      std::placeholders::_1, 
-                                      std::placeholders::_2));
-    }*/
 }
 
 void bridge::try_recv_from_one() 
